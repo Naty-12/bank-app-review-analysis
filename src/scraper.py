@@ -2,33 +2,27 @@ from google_play_scraper import Sort, reviews_all
 import pandas as pd
 from datetime import datetime
 
-def scrape_reviews(app_id, bank_name, source='Google Play'):
-    reviews = reviews_all(
-        app_id,
-        sleep_milliseconds=0,
-        lang='en',
-        country='us',
-        sort=Sort.NEWEST
-    )
+from google_play_scraper import reviews_all
+import pandas as pd
 
-    df = pd.DataFrame(reviews)
-    df = df[['content', 'score', 'at']]
-    df.columns = ['review', 'rating', 'date']
-    df['date'] = df['date'].dt.strftime('%Y-%m-%d')
-    df['bank'] = bank_name
-    df['source'] = source
-    return df
-
-banks = {
-    'com.bankA.app': 'Bank A',
-    'com.bankB.app': 'Bank B',
-    'com.bankC.app': 'Bank C'
+apps = {
+    'CBE': 'com.combanketh.mobilebanking',
+    'BOA': 'com.boa.boaMobileBanking',
+    'Dashen': 'com.dashen.dashensuperapp'
 }
 
-dfs = []
-for app_id, name in banks.items():
-    df = scrape_reviews(app_id, name)
-    dfs.append(df)
+all_reviews = []
 
-combined_df = pd.concat(dfs).drop_duplicates().dropna()
-combined_df.to_csv('data/bank_reviews.csv', index=False)
+for bank, app_id in apps.items():
+    reviews = reviews_all(app_id, lang='en', country='us')
+    for r in reviews:
+        all_reviews.append({
+            'review': r['content'],
+            'rating': r['score'],
+            'date': r['at'].strftime('%Y-%m-%d'),
+            'bank': bank,
+            'source': 'Google Play'
+        })
+
+df = pd.DataFrame(all_reviews)
+df.to_csv('data/raw_reviews.csv', index=False)
